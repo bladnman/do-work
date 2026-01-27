@@ -5,7 +5,7 @@ A task queue skill for Claude Code. Capture requests fast, process them later.
 ## Installation
 
 ```bash
-npx add-skill bladenman/do-work
+npx add-skill bladnman/do-work
 ```
 
 ## Welcome to your new work loop
