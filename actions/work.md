@@ -172,6 +172,8 @@ do-work/
 - **`archive/`**: Completed UR folders (self-contained units) AND legacy REQs/CONTEXT docs
 - **`assets/`**: Legacy screenshots and context documents (pre-UR system)
 
+**Immutability rule:** Files in `working/` and `archive/` are locked. Only the work action's own processing pipeline may modify files in `working/` (updating frontmatter, appending workflow sections). The do action and all other external processes must never reach into these folders. If a change request comes in for something already claimed or completed, the do action creates a new addendum REQ in the queue — it never touches the original. See the do action docs for the `addendum_to` field.
+
 **User Request (UR) lifecycle:**
 - Created in `do-work/user-requests/` by the do action
 - Referenced by REQ files via `user_request: UR-NNN` frontmatter
@@ -1039,6 +1041,7 @@ Show what would be processed and their triage routes without making changes.
 - Make architectural decisions beyond what's in the request
 - Run without user being present (this is supervised automation)
 - Modify requests that are already `completed` or `in_progress` by another agent
+- Allow external modification of files in `working/` or `archive/` — these are immutable to all actions except the work pipeline itself
 - Override triage decisions mid-flight (complete the request, then retry if needed)
 
 ## Example Session

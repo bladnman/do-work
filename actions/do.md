@@ -68,6 +68,21 @@ All request files go in the project's `do-work/` folder:
 
 This folder name reflects the **do-work pattern** - requests created by the do action are processed by the work action.
 
+### File Immutability Rule
+
+**Files in `working/` and `archive/` are IMMUTABLE. They must never be modified, appended to, or updated by any action other than the work action's own processing pipeline.**
+
+This is a hard rule with no exceptions:
+
+- **`do-work/working/`**: A builder is actively working on this request. The content is locked. No addendums, no "oh wait, one more thing." If you modify a file mid-build, you risk corrupting the builder's context or creating conflicts with work already in progress.
+- **`do-work/archive/`**: This is the historical record. Completed work is done. Changing archived files rewrites history and breaks traceability.
+
+**What happens when someone wants to add to an in-flight or completed request?**
+
+Create a **new addendum request** that references the original. The addendum goes through the normal queue as its own REQ file. This keeps the original intact and gives the builder a clean, standalone unit of work.
+
+See Step 2 for the full addendum-to-in-flight workflow.
+
 ## File Naming Convention
 
 **Request files:** `REQ-[number]-[slug].md`
@@ -296,6 +311,7 @@ add keyboard shortcuts
 |-------|----------|-------------|
 | `related` | If applicable | Array of related REQ IDs |
 | `batch` | If applicable | Batch name grouping related requests |
+| `addendum_to` | If applicable | Original REQ ID this request amends (used when the original is in `working/` or `archive/`) |
 
 **UR input.md documents:**
 
@@ -349,19 +365,28 @@ Determine if this is a simple or complex request.
 
 ### Step 2: Check for Existing Requests
 
-Read all files in `do-work/` folder. For each parsed request:
+Read all files in `do-work/` folder, **and list filenames in `do-work/working/` and `do-work/archive/`** (don't read their contents — just check for matching IDs/slugs). For each parsed request:
 - Does a similar request already exist?
 - Is this an enhancement to an existing request?
 - Is this a duplicate?
+- **Where does the existing request live?** (queue, working, or archive)
 
-**If duplicate/similar found:**
+**If duplicate/similar found — the location matters:**
+
+| Existing request is in... | Action |
+|---------------------------|--------|
+| `do-work/` (queue) | Safe to append an addendum to the pending file |
+| `do-work/working/` | **NEVER modify.** Create a new addendum REQ (see below) |
+| `do-work/archive/` | **NEVER modify.** Create a new addendum REQ (see below) |
+
+**If the match is in the queue (`do-work/` root):**
 - If clearly the same thing: Tell user, don't create new file
 - If similar but potentially different: Use AskUserQuestion to clarify
 - If enhancement: Ask if they want to update the existing request
 
-**Updating an existing request (addendum, not rewrite):**
+**Updating a queued request (addendum, not rewrite):**
 
-Don't rework the original content - that's lossy. Instead, append an Addendum section:
+Don't rework the original content — that's lossy. Instead, append an Addendum section:
 
 ```markdown
 ## Addendum (2025-01-27)
@@ -372,7 +397,44 @@ User added: "dark mode should also affect the sidebar"
 - [any other new requirements extracted from the update]
 ```
 
-This preserves the original request intact. The building agent reconciles the original + addendum during planning - it can see what came first and what was added later.
+This preserves the original request intact. The building agent reconciles the original + addendum during planning — it can see what came first and what was added later.
+
+**If the match is in `working/` or `archive/` — create an addendum REQ:**
+
+The original request is either being actively built or already completed. You cannot touch it. Instead, create a brand new request that explicitly references the original:
+
+```markdown
+---
+id: REQ-021
+title: "Addendum: dark mode sidebar support"
+status: pending
+created_at: 2025-01-27T09:00:00Z
+user_request: UR-006
+addendum_to: REQ-005
+---
+
+# Addendum: Dark Mode Sidebar Support
+
+## What
+Add sidebar support to the existing dark mode implementation (REQ-005).
+
+## Context
+This is an addendum to REQ-005 (dark mode), which is currently [in progress / completed].
+The user realized after the original request was claimed that the sidebar also needs dark mode support.
+
+## Requirements
+- Sidebar must also respect the dark mode theme
+- [any other new requirements]
+
+---
+*Source: Addendum to REQ-005. Original request: "dark mode should also affect the sidebar"*
+```
+
+Key rules for addendum REQs:
+- **`addendum_to` field**: Links to the original REQ ID so the builder has context
+- **Standalone**: The addendum must contain enough detail to be built independently — don't assume the builder has the original request open
+- **Goes in the queue**: It's a normal pending REQ in `do-work/` and gets processed in order like everything else
+- **Tell the user**: Explain that the original is already claimed/completed and this will be handled as a follow-up request
 
 ### Step 3: Clarify Only If Needed
 
@@ -616,16 +678,32 @@ Claude: Created:
 
 (Request file includes path to saved screenshot plus detailed description)
 
-### Example 5: Enhancement (Addendum)
+### Example 5: Enhancement to Queued Request (Addendum)
 
 ```
 User: do work dark mode should also affect the sidebar
 
-Claude: [Checks existing]
-Found REQ-005-dark-mode.md. Added addendum for sidebar requirement.
+Claude: [Checks existing — REQ-005-dark-mode.md is in do-work/ queue]
+Found REQ-005-dark-mode.md (pending). Added addendum for sidebar requirement.
 ```
 
 (The original request content stays intact. An Addendum section is appended with the new requirement and timestamp.)
+
+### Example 5b: Enhancement to In-Flight Request (New Addendum REQ)
+
+```
+User: do work dark mode should also affect the sidebar
+
+Claude: [Checks existing — REQ-005-dark-mode.md is in do-work/working/]
+REQ-005-dark-mode.md is currently being worked on. I can't modify it
+while a builder is active. Creating a follow-up request instead.
+
+Created:
+- do-work/user-requests/UR-006/input.md (verbatim input)
+- do-work/REQ-021-addendum-dark-mode-sidebar.md (addendum_to: REQ-005)
+```
+
+(A new REQ is created that references the original. The builder will pick it up after REQ-005 is done.)
 
 ### Example 6: Complex Multi-Feature Request
 
