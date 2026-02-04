@@ -2,9 +2,9 @@
 
 > **Part of the do-work skill.** Handles version reporting and update checks.
 
-**Current version**: 0.9.3
+**Current version**: 0.9.4
 
-**Upstream**: https://raw.githubusercontent.com/bladnman/do-work/main/SKILL.md
+**Upstream**: https://raw.githubusercontent.com/bladnman/do-work/main/actions/version.md
 
 ## Responding to Version Requests
 
@@ -28,9 +28,10 @@ When user asks "check for updates", "update", or "is there a newer version":
 Update available: v{remote} (you have v{local})
 
 To update, run:
-npx install-skill bladnman/do-work
+npx skills update
 
-Or visit: https://github.com/bladnman/do-work
+Or reinstall with:
+npx skills add bladnman/do-work
 ```
 
 **If up to date** (local >= remote):
@@ -45,7 +46,7 @@ You're up to date (v{local})
 Couldn't check for updates.
 
 To manually update, run:
-npx install-skill bladnman/do-work
+npx skills add bladnman/do-work
 
 Or visit: https://github.com/bladnman/do-work
 ```

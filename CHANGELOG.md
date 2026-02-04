@@ -4,6 +4,14 @@ What's new, what's better, what's different. Most recent stuff on top.
 
 ---
 
+## 0.9.4 — The Passport (2026-02-04)
+
+Install and update commands are no longer tied to a single CLI tool. Switched from `npx install-skill` / `npx add-skill` to the portable `npx skills` CLI, which works across multiple agentic coding tools. Update checks now point to `npx skills update` instead of a reinstall command.
+
+- README install command updated to `npx skills add bladnman/do-work`
+- Version action "update available" message now suggests `npx skills update`
+- Fallback/manual update uses `npx skills add` instead of `npx install-skill`
+
 ## 0.9.3 — The Timestamp (2026-02-04)
 
 Every changelog entry now carries a date. Backfilled all existing entries from git history so nothing's undated. Future entries get dates automatically — the CLAUDE.md format template and rules were updated to enforce it.
